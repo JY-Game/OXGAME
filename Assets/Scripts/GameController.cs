@@ -16,9 +16,15 @@ public class GameController : MonoBehaviour
     public PlayerColor activePlayerColor;
     public PlayerColor inactivePlayerColor;
 
+    private string computerSide;
+    public float delay;
+    int value; //box indx
+    public bool playerMove; 
+
     public GameObject startInfo;
 
     public int moveCount;
+    public LineRenderer lineRenderer;
 
     private void Awake()
     {
@@ -26,6 +32,42 @@ public class GameController : MonoBehaviour
         playerSide = "X";
         gameOverPanel.SetActive(false);
         moveCount = 0;
+
+        playerMove = true;
+        lineRenderer.enabled = false;
+    }
+
+    private void Update()
+    {
+        if (playerMove == false)
+        {
+            delay += delay * Time.deltaTime;
+            if (delay >= 100)
+            {
+                value = Random.Range(0, 8);
+                if (buttonList[value].GetComponentInParent<Button>().interactable == true)
+                {
+                    buttonList[value].text = computerSide;
+                    buttonList[value].GetComponentInParent<Button>().interactable = false;
+                    EndTurn();
+                    
+                }
+            }
+        }
+    }
+
+    void DrawLine(int i, int k)
+    {
+        lineRenderer.SetPosition(0, new Vector3(buttonList[i].transform.position.x,
+            buttonList[i].transform.position.y, -9));
+        lineRenderer.SetPosition(1, new Vector3(buttonList[k].transform.position.x,
+            buttonList[k].transform.position.y, -9));
+        Color color = (playerSide.Equals("X")) ? Color.green : Color.yellow;
+        color.a = .3f;
+        lineRenderer.startColor = color;
+        lineRenderer.endColor = Color.white;
+
+        lineRenderer.enabled = true;
     }
 
     void StartGame()
@@ -48,40 +90,23 @@ public class GameController : MonoBehaviour
         return playerSide;
     }
 
+    public string GetComputerSide()
+    {
+        return computerSide;
+    }
+
     public void EndTurn()
     {
-        moveCount++; 
-        if (buttonList[0].text == playerSide && buttonList[1].text == playerSide && buttonList[2].text == playerSide)
+        moveCount++;
+        delay = 10;
+        if (CheckWin(playerSide))
         {
             GameOver(playerSide);
         }
-        if (buttonList[3].text == playerSide && buttonList[4].text == playerSide && buttonList[5].text == playerSide)
+
+        if (CheckWin(computerSide))
         {
-            GameOver(playerSide);
-        }
-        if (buttonList[6].text == playerSide && buttonList[7].text == playerSide && buttonList[8].text == playerSide)
-        {
-            GameOver(playerSide);
-        }
-        if (buttonList[0].text == playerSide && buttonList[3].text == playerSide && buttonList[6].text == playerSide)
-        {
-            GameOver(playerSide);
-        }
-        if (buttonList[1].text == playerSide && buttonList[4].text == playerSide && buttonList[7].text == playerSide)
-        {
-            GameOver(playerSide);
-        }
-        if (buttonList[2].text == playerSide && buttonList[5].text == playerSide && buttonList[8].text == playerSide)
-        {
-            GameOver(playerSide);
-        }
-        if (buttonList[0].text == playerSide && buttonList[4].text == playerSide && buttonList[8].text == playerSide)
-        {
-            GameOver(playerSide);
-        }
-        if (buttonList[2].text == playerSide && buttonList[4].text == playerSide && buttonList[6].text == playerSide)
-        {
-            GameOver(playerSide);
+            GameOver(computerSide);
         }
 
         if (moveCount >= 9 )
@@ -93,6 +118,25 @@ public class GameController : MonoBehaviour
 
         Debug.Log("END TURN");
         ChangeSides();
+    }
+
+    bool CheckWin(string turn)
+    {
+        return AreBoxMatch(0,1,2,turn) || AreBoxMatch(3,4,5,turn) || AreBoxMatch(6,7,8,turn) ||
+            AreBoxMatch(0,3,6,turn) || AreBoxMatch(1,4,7,turn) || AreBoxMatch(2,5,8,turn) ||
+            AreBoxMatch(0,4,8,turn) || AreBoxMatch(2,4,6,turn);
+    }
+
+    bool AreBoxMatch(int i, int j, int k, string turn)
+    {
+        bool matched = (buttonList[i].text==turn 
+            && buttonList[j].text==turn 
+            && buttonList[k].text==turn);
+        if (matched)
+        {
+            DrawLine(i,k);
+        }
+        return matched;
     }
 
     void GameOver(string winPlayer)
@@ -137,8 +181,10 @@ public class GameController : MonoBehaviour
 
     void ChangeSides()
     {
-        playerSide = (playerSide.Equals("X")) ? "O" : "X";
+        //playerSide = (playerSide.Equals("X")) ? "O" : "X";
 
+        playerMove = (playerMove == true) ? false : true;
+        
         if(playerSide == "X")
         {
             SetPlayerColors(playerX, playerO);
@@ -154,10 +200,12 @@ public class GameController : MonoBehaviour
         playerSide = startingSide;
         if (playerSide == "X")
         {
+            computerSide = "O";
             SetPlayerColors(playerX, playerO);
         }
         else
         {
+            computerSide = "X";
             SetPlayerColors(playerO, playerX);
         }
 
@@ -172,12 +220,16 @@ public class GameController : MonoBehaviour
         restartButton.SetActive(false);
         SetPlayerButtons(true);
         startInfo.SetActive(true);
+        playerMove = true;
+        delay = 10;
 
         for (int i =0;i<buttonList.Length;i++)
         {
             buttonList[i].text = "";
            
         }
+
+        lineRenderer.enabled = false;
 
     }
 
